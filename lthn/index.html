@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pembuat Tautan Lokasi</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Pembuat Tautan Pelacakan</h1>
+        <p>Buat tautan yang akan meminta lokasi pengunjung (dengan izin mereka)</p>
+        
+        <div class="form-group">
+            <label for="linkName">Nama Tautan:</label>
+            <input type="text" id="linkName" placeholder="Masukkan nama untuk tautan">
+        </div>
+        
+        <button id="generateBtn">Buat Tautan</button>
+        
+        <div id="result" class="hidden">
+            <h3>Tautan Anda:</h3>
+            <div class="link-container">
+                <input type="text" id="generatedLink" readonly>
+                <button id="copyBtn">Salin</button>
+            </div>
+            <p>Bagikan tautan ini. Kunjungi halaman <a href="dashboard.html">Dashboard</a> untuk melihat data lokasi yang terkumpul.</p>
+        </div>
+    </div>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

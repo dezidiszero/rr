@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Halaman Berbagi Lokasi</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Berbagi Lokasi</h1>
+        <p>Halaman ini meminta izin untuk mengakses lokasi Anda.</p>
+        <p>Data lokasi hanya akan dibagikan jika Anda menyetujuinya.</p>
+        
+        <button id="shareLocationBtn">Bagikan Lokasi Saya</button>
+        
+        <div id="status" class="hidden">
+            <p id="statusMessage"></p>
+        </div>
+    </div>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="firebase-config.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const params = new URLSearchParams(window.location.search);
+            const trackId = params.get('id');
+            
+            if (!trackId) {
+                document.getElementById('status').classList.remove('hidden');
+                document.getElementById('statusMessage').textContent = 'ID pelacakan tidak valid.';
+                return;
+            }
+            
+            const shareLocationBtn = document.getElementById('shareLocationBtn');
+            const status = document.getElementById('status');
+            const statusMessage = document.getElementById('statusMessage');
+            
+            shareLocationBtn.addEventListener('click', function() {
+                status.classList.remove('hidden');
+                statusMessage.textContent = 'Meminta izin lokasi...';
+                
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                        function(position) {
+                            const locationData = {
+                                latitude: position.coords.latitude,
+                                longitude: position.coords.longitude,
+                                timestamp: new Date().toISOString(),
+                                userAgent: navigator.userAgent
+                            };
+                            
+                            // Simpan data ke Firebase
+                            firebase.database().ref('locations/' + trackId).push(locationData)
+                                .then(() => {
+                                    statusMessage.textContent = 'Terima kasih! Lokasi berhasil dibagikan.';
+                                })
+                                .catch(error => {
+                                    statusMessage.textContent = 'Gagal menyimpan lokasi: ' + error.message;
+                                });
+                        },
+                        function(error) {
+                            switch(error.code) {
+                                case error.PERMISSION_DENIED:
+                                    statusMessage.textContent = 'Anda menolak permintaan lokasi.';
+                                    break;
+                                case error.POSITION_UNAVAILABLE:
+                                    statusMessage.textContent = 'Informasi lokasi tidak tersedia.';
+                                    break;
+                                case error.TIMEOUT:
+                                    statusMessage.textContent = 'Waktu permintaan lokasi habis.';
+                                    break;
+                                default:
+                                    statusMessage.textContent = 'Terjadi kesalahan: ' + error.message;
+                            }
+                        }
+                    );
+                } else {
+                    statusMessage.textContent = 'Geolokasi tidak didukung oleh browser Anda.';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Lokasi</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://maps.googleapis.com/maps/api/js?key=MASUKKAN_API_KEY_GOOGLE_MAPS_ANDA"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Dashboard Lokasi</h1>
+        <p>Lihat lokasi dari tautan yang telah Anda bagikan</p>
+        
+        <div class="form-group">
+            <label for="trackId">ID Pelacakan:</label>
+            <input type="text" id="trackId" placeholder="Masukkan ID pelacakan">
+            <button id="loadDataBtn">Muat Data</button>
+        </div>
+        
+        <div id="map" class="map-container hidden"></div>
+        
+        <div id="locationsList">
+            <h3>Data Lokasi:</h3>
+            <div id="locationsData"></div>
+        </div>
+    </div>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="firebase-config.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const trackIdInput = document.getElementById('trackId');
+            const loadDataBtn = document.getElementById('loadDataBtn');
+            const mapContainer = document.getElementById('map');
+            const locationsData = document.getElementById('locationsData');
+            let map, markers = [];
+            
+            loadDataBtn.addEventListener('click', function() {
+                const trackId = trackIdInput.value.trim();
+                if (!trackId) {
+                    alert('Silakan masukkan ID pelacakan');
+                    return;
+                }
+                
+                // Bersihkan data sebelumnya
+                locationsData.innerHTML = '';
+                markers.forEach(marker => marker.setMap(null));
+                markers = [];
+                
+                // Muat data dari Firebase
+                firebase.database().ref('locations/' + trackId).once('value')
+                    .then(snapshot => {
+                        const data = snapshot.val();
+                        
+                        if (!data) {
+                            locationsData.innerHTML = '<p>Tidak ada data untuk ID ini</p>';
+                            mapContainer.classList.add('hidden');
+                            return;
+                        }
+                        
+                        // Tampilkan peta jika belum diinisialisasi
+                        if (!map) {
+                            mapContainer.classList.remove('hidden');
+                            map = new google.maps.Map(mapContainer, {
+                                zoom: 2,
+                                center: {lat: 0, lng: 0}
+                            });
+                        }
+                        
+                        // Tampilkan data lokasi
+                        let bounds = new google.maps.LatLngBounds();
+                        let locationsList = '';
+                        
+                        Object.keys(data).forEach(key => {
+                            const location = data[key];
+                            const position = {
+                                lat: location.latitude,
+                                lng: location.longitude
+                            };
+                            
+                            // Tambahkan marker ke peta
+                            const marker = new google.maps.Marker({
+                                position: position,
+                                map: map,
+                                title: new Date(location.timestamp).toLocaleString()
+                            });
+                            
+                            markers.push(marker);
+                            bounds.extend(position);
+                            
+                            // Tambahkan informasi ke daftar
+                            locationsList += `
+                                <div class="location-item">
+                                    <p><strong>Waktu:</strong> ${new Date(location.timestamp).toLocaleString()}</p>
+                                    <p><strong>Koordinat:</strong> ${location.latitude}, ${location.longitude}</p>
+                                    <p><strong>Perangkat:</strong> ${location.userAgent}</p>
+                                    <a href="https://www.google.com/maps?q=${location.latitude},${location.longitude}" target="_blank">Lihat di Google Maps</a>
+                                    <hr>
+                                </div>
+                            `;
+                        });
+                        
+                        // Atur peta untuk menampilkan semua marker
+                        if (markers.length > 0) {
+                            map.fitBounds(bounds);
+                        }
+                        
+                        locationsData.innerHTML = locationsList;
+                    })
+                    .catch(error => {
+                        locationsData.innerHTML = `<p>Error: ${error.message}</p>`;
+                    });
+            });
+        });
+    </script>
+</body>
+</html>
